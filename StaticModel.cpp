@@ -9,15 +9,21 @@
 #ifdef DEBUG
 #include <iostream>
 #include <math.h>
+using namespace std;
 #endif // ifdef DEBUG
 
-using namespace std;
 
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
+
+#ifdef DEBUG
+#define DEBUG_PROBABILITY
+//#define DEBUG_INCODES
+#endif
+
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -35,7 +41,9 @@ CStaticModel::~CStaticModel()
 
 CSymbolData *CStaticModel::MakeSymbolDataFromWord(const WORD symbolcode)
 {
-	
+#ifdef DEBUG_INCODES
+	cout << "code(S): "<<symbolcode<<endl;
+#endif
 	CSymbol *symbol = new CSymbol();
 	symbol->SetCode(symbolcode);
 	CString string("<escaped symbol>");
@@ -45,7 +53,7 @@ CSymbolData *CStaticModel::MakeSymbolDataFromWord(const WORD symbolcode)
 		symbolcode,
 		symbolcode+1,
 		END_OF_STREAM_SYMBOLCODE+1);
-#ifdef DEBUG
+#ifdef DEBUG_PROBABILITY
 			float probability = ((float)1.0)/(END_OF_STREAM_SYMBOLCODE+1);
 			cout << " (" << probability;
 			cout << " = " << -log(probability)/log(2) << ")" ;
@@ -67,7 +75,9 @@ unsigned short int CStaticModel::GetScale() const
 CSymbolData *CStaticModel::MakeSymbolDataFromCode(unsigned short int count,
 		unsigned short int scale)
 {
-	ASSERT(false); // Not tested, not correct (I think)
+#ifdef DEBUG_INCODES
+	cout << "decode(S): "<<count<<endl;
+#endif
 	CSymbol *symbol = new CSymbol();
 	symbol->SetCode(count);
 	CString string("<escaped symbol>");

@@ -17,6 +17,11 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
+#ifdef DEBUG
+#define DEBUG_PROBABILITY
+//#define DEBUG_INCODES
+#endif
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -75,37 +80,14 @@ unsigned short int CAdaptiveModel::GetScale() const
 
 
 /**
- * We will own the symbol.
- */
-/*void CAdaptiveModel::AddSymbolToCount(CSymbol &new_symbol)
-{
-	CSymbolCount *symbolcount_in_map;
-	void *pointer;
-
-	if(m_symbolcountmap.Lookup(new_symbol.GetCode(),pointer))
-	{
-		symbolcount_in_map = reinterpret_cast<CSymbolCount *>(pointer);
-		// Already in map
-		symbolcount_in_map->AddToCount(1);
-	} 
-	else
-	{
-		// Not in map yet
-		CSymbolCount *sc = new CSymbolCount();
-		sc->SetSymbol(&new_symbol);
-		sc->SetCount(1);
-		m_symbolcountmap.SetAt(new_symbol.GetCode(),sc);
-	}
-
-	m_totalcount ++;
-}
-*/
-/**
  * Returns a reference to the symbol attached to the given code. 
  */ 
 CSymbolData *CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode)
 {
-	unsigned short top_value=0, bottom_value=0,range_value=0;
+#ifdef DEBUG_INCODES
+	cout << "code(A): "<<symbolcode<<endl;
+#endif
+	unsigned short int top_value=0, bottom_value=0,range_value=0;
 
 	list<CSymbolCount*>::iterator it; // = m_symbolcountlist.iterator;
 
@@ -129,7 +111,7 @@ CSymbolData *CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode)
 				top_value,
 				m_totalcount);
 			ASSERT(sd->GetLowCount() < sd->GetHighCount());
-#ifdef DEBUG
+#ifdef DEBUG_PROBABILITY
 			float probability = ((float)(top_value-bottom_value))/m_totalcount;
 			cout << " (" << probability;
 			cout << " = " << -log(probability)/log(2) << ")" ;
@@ -158,7 +140,7 @@ CSymbolData *CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode)
 				top_value,
 				m_totalcount);
 			ASSERT(sd->GetLowCount() < sd->GetHighCount());
-#ifdef DEBUG
+#ifdef DEBUG_PROBABILITY
 			float probability = ((float)(top_value-bottom_value))/m_totalcount;
 			cout << " (" << probability;
 			cout << " = " << -log(probability)/log(2) << ")" ;
@@ -171,115 +153,7 @@ CSymbolData *CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode)
 
 	// Silence compiler
 	return new CSymbolData(new CSymbol(),0,0,0);
-
-
-	// First check if we already know this symbol
-/*	CSymbolCount *symbolcount_in_map;
-	void *pointer;
-	if(m_symbolcountmap.Lookup(symbolcode,pointer))
-	{
-		symbolcount_in_map = reinterpret_cast<CSymbolCount *>(pointer);
-		return *new CSymbolData(NULL, 0,0,0); // symbolcount_in_map->GetSymbol();  // XXX
-	} 
-	else 
-	{
-		CSymbol *s = new CSymbol();
-		s->SetCode(symbolcode);
-		if(symbolcode>0 && symbolcode<256 && isprint(symbolcode))
-		{
-			char c[2], *ch;
-			c[0] = static_cast<char>(symbolcode);
-			c[1] = '\0';
-			ch = c;
-			CString str(ch);
-			s->SetDescription(str);
-		}
-		else
-		{
-			CString desc;
-			desc.Format("<%d>",symbolcode);
-			s->SetDescription(desc);
-		}
-		// Not in map yet
-		CSymbolCount *sc = new CSymbolCount();
-		sc->SetSymbol(s);
-		sc->SetCount(0);
-		m_symbolcountmap.SetAt(s->GetCode(),sc);
-//		return *new CSymbolData(NULL, 0,0,0); // symbolcount_in_map->GetSymbol();  // XXX
-//		return NULL; // XXX: s;
-	}
-*/
 }
-/*
-void CAdaptiveModel::PrintSymbolCounts()
-{
-	POSITION pos;
-	WORD w;
-	void *pointer;
-	CSymbolCount *sc;
-	pos = m_symbolcountmap.GetStartPosition();
-	while(pos != NULL)
-	{
-		m_symbolcountmap.GetNextAssoc(pos, w, pointer);
-		sc = reinterpret_cast<CSymbolCount *>(pointer);
-		CString str;
-		str.Format("Symbol: '%s' %ld",sc->GetSymbol()->GetDescription(),
-			sc->GetCount());
-		printf(str);
-		printf("\n");
-	}
-	
-}
-*/	
-/*void CAdaptiveModel::ConstructModelFromCounts()
-{
-	POSITION mappos;
-	WORD w;
-	void *pointer;
-	CSymbolCount *sc;
-	mappos = m_symbolcountmap.GetStartPosition();
-	while(mappos != NULL)
-	{
-		m_symbolcountmap.GetNextAssoc(mappos, w, pointer);
-		sc = reinterpret_cast<CSymbolCount *>(pointer);
-
-		// Find a place in the list for this symbol
-		
-		CSymbolData data;
-		POSITION listpos = m_symboldatalist.GetHeadPosition();
-		while (listpos != NULL)
-		{
-			data = m_symboldatalist.GetNext(listpos);
-
-			ASSERT(sc->GetSymbol()->GetCode() != data.GetSymbol()->GetCode());
-			if(sc->GetSymbol()->GetCode() < data.GetSymbol()->GetCode())
-			{
-				break;
-			}
-		}
-		// this is the place
-		CSymbolData *symboldata = new CSymbolData();
-		symboldata->SetSymbol(sc->GetSymbol());
-		m_symboldatalist.InsertBefore(listpos,*symboldata);
-		delete symboldata;
-		
-	}
-
-	// We now have an ordered list of symbols
-	CSymbolData data;
-	POSITION listpos = m_symboldatalist.GetHeadPosition();
-	while (listpos != NULL)
-	{
-		data = m_symboldatalist.GetNext(listpos);
-		
-		ASSERT(sc->GetSymbol()->GetCode() != data.GetSymbol()->GetCode());
-		if(sc->GetSymbol()->GetCode() < data.GetSymbol()->GetCode())
-		{
-			break;
-		}
-	}
-}
-*/
 
 /**
  * Update the model to do better next time.
@@ -372,13 +246,16 @@ void CAdaptiveModel::UpdateWithWord(const WORD symbolcode)
 CSymbolData *CAdaptiveModel::MakeSymbolDataFromCode(unsigned short int count,
 		unsigned short int scale)
 {
+#ifdef DEBUG_INCODES
+	cout << "decode(A): "<<count<<endl;
+#endif
 	list<CSymbolCount*>::iterator it;
 	int low_count, high_count;
 
 	it = m_symbolcountlist.end();
 
 	while((it != m_symbolcountlist.begin()) && 
-		(count < (*(--it))->GetCount()))
+		((*(--it))->GetCount() <= count))
 	{
 	}
 
@@ -393,7 +270,7 @@ CSymbolData *CAdaptiveModel::MakeSymbolDataFromCode(unsigned short int count,
 	{
 		low_count = (*it)->GetCount();
 	}
-	it--;
+	it--; // XXX: Remove?
 
 
 	CSymbolData *sd = new CSymbolData(new CSymbol(*sc.GetSymbol()),

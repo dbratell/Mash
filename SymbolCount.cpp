@@ -26,13 +26,13 @@ CSymbolCount::~CSymbolCount()
 
 }
 
-void CSymbolCount::AddToCount(unsigned short inc)
+void CSymbolCount::AddToCount(unsigned short int inc)
 {
 	ASSERT(((int)m_count + (int)inc) <= 0xFFFF);
-	m_count=static_cast<unsigned short>(m_count + inc);
+	m_count=static_cast<unsigned short int>(m_count + inc);
 }
 
-void CSymbolCount::SetCount(unsigned short new_count)
+void CSymbolCount::SetCount(unsigned short int new_count)
 {
 	m_count=new_count;
 }

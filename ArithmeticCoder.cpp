@@ -17,6 +17,13 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
+#ifdef DEBUG
+//#define DEBUG_CALCULATIONS
+//#define DEBUG_UNDERFLOW_CALCULATIONS
+#define DEBUG_BITS
+//#define DEBUG_LOW_HIGH
+#endif
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -45,23 +52,50 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 	int context = 0;
 	int realcontext = 0;
 
-	while(infile.Read(&buffer,1))
-	{
-		m_inbits += 8;
+	WORD symbol_code_to_send;
 
-		cout << "\nIn: '" << buffer << "'\n" << "Out: ";
+	while(true)
+	{
+		if(infile.Read(&buffer,1))
+		{
+			symbol_code_to_send = buffer;
+			m_inbits += 8;
+		}
+		else
+		{
+			symbol_code_to_send = END_OF_STREAM_SYMBOLCODE;
+		}
+
+
+
+#ifdef DEBUG
+		if(END_OF_STREAM_SYMBOLCODE != symbol_code_to_send)
+		{
+			cout << "\nIn: '" << buffer << "'\n" << "Out: ";
+		}
+		else
+		{
+			cout << "\nIn: EOF\nOut: ";
+		}
+#endif
 		bool escapesymbol = false;
 
 		do
 		{
 			CModel *model = GetModel(context);
 			CSymbolData *symboldata = model->MakeSymbolDataFromWord(
-				static_cast<WORD>(buffer));
+				static_cast<WORD>(symbol_code_to_send));
+#ifdef DEBUG_CALCULATIONS
+			cout << "(sd:"<<symboldata->GetLowCount()<<"-"<<
+				symboldata->GetHighCount()<<")"<<endl;
+#endif
 			EncodeSymbol(outfile, *symboldata);
 			// Was it an escape symbol?
 			if(ESCAPE_SYMBOLCODE == symboldata->GetSymbol()->GetCode())
 			{
+#ifdef DEBUG
 				cout << "+";
+#endif
 				escapesymbol = true;
 				context = ESCAPE_SYMBOLCODE;
 			}
@@ -73,6 +107,10 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 
 		} while(escapesymbol);
 
+		if(END_OF_STREAM_SYMBOLCODE == symbol_code_to_send)
+		{
+			break;
+		}
 		CModel *model = GetModel(realcontext);
 		model->UpdateWithWord(buffer);
 
@@ -80,15 +118,11 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 
 	}
 
-	CModel *model = GetModel(context);
-	CSymbolData *symboldata = model->MakeSymbolDataFromWord(
-		END_OF_STREAM_SYMBOLCODE);
-	EncodeSymbol(outfile, *symboldata);
-	delete symboldata;
-
 	FlushArithmeticEncoder(outfile);
+#ifdef DEBUG
+	cout << "ZEROES";
+#endif
 	OutputBits(outfile, 0L, 16);
-
 
 }
 
@@ -102,6 +136,9 @@ void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 
 	while(true)
 	{
+#ifdef DEBUG
+		cout << "\nIn: ";
+#endif
 		bool escapesymbol = false;
 
 		do
@@ -109,13 +146,22 @@ void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 			CModel *model = GetModel(context);
 			unsigned short int scale = model->GetScale();
 			unsigned short int count = GetCurrentCount(scale);
+
 			CSymbolData *symboldata = model->MakeSymbolDataFromCode(count,scale);
+#ifdef DEBUG_CALCULATIONS
+			cout << "(sd:"<<symboldata->GetLowCount()<<"-"<<
+				symboldata->GetHighCount()<<")"<<endl;
+#endif
 			context = symboldata->GetSymbol()->GetCode();
 			if(END_OF_STREAM_SYMBOLCODE == context)
 			{
+				delete symboldata;
+				symboldata = NULL;
 				return;
 			}
 			RemoveSymbolFromStream(in, *symboldata);
+			delete symboldata;
+			symboldata = NULL;
 			if(ESCAPE_SYMBOLCODE == context)
 			{
 #ifdef DEBUG
@@ -126,21 +172,21 @@ void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 			}
 			else
 			{
-#ifdef DEBUG
-				cout << (char)context;
-#endif
 				escapesymbol = false;
 				CModel *realmodel = GetModel(realcontext);
 				realmodel->UpdateWithWord(context);
 				realcontext = context;
 			}
-			delete symboldata;
 		} while(escapesymbol);
 
 		ASSERT(context>=0 && context<256);
 		char buffer[1];
 		buffer[0] = static_cast<char>(context);
 		out.Write(buffer,1);
+#ifdef DEBUG
+		cout << "\nOut: " << buffer[0]<<endl;
+#endif
+		m_outbits += 8;
 
 	}
 
@@ -148,13 +194,13 @@ void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 
 void CArithmeticCoder::InitializeArithmeticEncoder()
 {
-	m_low = 0;
-	m_high = 0xFFFF;
-	m_underflow_bits = 0;
-
 	// XXX: Move to the constructor?
 	m_inbits = 0;
 	m_outbits = 0;
+
+	m_low = 0;
+	m_high = 0xFFFF;
+	m_underflow_bits = 0;
 }
 
 void CArithmeticCoder::InitializeArithmeticDecoder(CFile &infile)
@@ -181,6 +227,12 @@ void CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
 	long range = (m_high-m_low)+1;
 	m_high = m_low + (unsigned short int)
 		(( range * symboldata.GetHighCount()) / symboldata.GetScale() -1);
+#ifdef DEBUG_CALCULATIONS
+	cout << "(L = "<<m_low<<"+"<<range<<"*"<<symboldata.GetLowCount();
+	cout << "/"<< symboldata.GetScale()<<")"<<endl;
+	cout << "(H = "<<m_low<<"+"<<range<<"*"<<symboldata.GetHighCount();
+	cout << "/"<< symboldata.GetScale()<<"-1)"<<endl;
+#endif
 	m_low = m_low + (unsigned short int)
 		(( range * symboldata.GetLowCount()) / symboldata.GetScale());
 	ASSERT(m_high > m_low);
@@ -189,19 +241,32 @@ void CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
 
 	while(true)
 	{
+#ifdef DEBUG_LOW_HIGH
+			cout << "(" << m_low << "-" << m_high << ")";
+#endif
 		if((m_high & 0x8000) == (m_low & 0x8000))
 		{
 			// Same top bit
-			OutputBits(outfile,m_high,1);
+			OutputBits(outfile,
+				m_high & 0x8000,
+				1);
 			while(m_underflow_bits>0) {
 				// Output all stored underflow bits
-				OutputBits(outfile, ~m_high,1);
+				OutputBits(outfile,
+					(~m_high) & 0x8000,
+					1);
 				m_underflow_bits--;
+#ifdef DEBUG_UNDERFLOW_CALCULATIONS
+				cout << "(u--="<<m_underflow_bits<<")";
+#endif
 			}
 		} 
 		else if((m_low & 0x4000) && !(m_high & 0x4000))
 		{
 			m_underflow_bits++;
+#ifdef DEBUG_UNDERFLOW_CALCULATIONS
+			cout << "(u++="<<m_underflow_bits<<")";
+#endif
 			m_low &=0x3FFF;
 			m_high |=0x4000;
 		}
@@ -224,11 +289,27 @@ void CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
 
 void CArithmeticCoder::FlushArithmeticEncoder(CFile &outfile)
 {
-	OutputBits(outfile, m_low & 0x400, 1);
+#ifdef DEBUG
+	cout << "FLUSH";
+#endif
+
+	OutputBits(outfile, (m_low & 0x4000)<<1, 1);
+#ifdef DEBUG_LOW_HIGH
+	cout << "(" << m_low << "-" << m_high << ")";
+#endif
 	m_underflow_bits++;
+#ifdef DEBUG_UNDERFLOW_CALCULATIONS
+		cout << "(u++="<<m_underflow_bits<<")";
+#endif
 	while(m_underflow_bits-- > 0)
 	{
-		OutputBits(outfile, ~m_low & 0x4000 );
+#ifdef DEBUG_UNDERFLOW_CALCULATIONS
+		cout << "(u--="<<m_underflow_bits<<")";
+#endif
+		OutputBits(outfile, (~m_low & 0x4000)<<1,1 );
+#ifdef DEBUG_LOW_HIGH
+	cout << "(" << m_low << "-" << m_high << ")";
+#endif
 	}
 }
 
@@ -246,13 +327,17 @@ void CArithmeticCoder::OutputBits(CFile &outfile,
 		{
 			buffer[0]='1';
 			outfile.Write(buffer,1);
+#ifdef DEBUG_BITS
 			cout << "1";
+#endif
 		}
 		else
 		{
 			buffer[0]='0';
 			outfile.Write(buffer,1);
+#ifdef DEBUG_BITS
 			cout << "0";
+#endif
 		}
 		bits <<= 1;
 		no_of_bits--;
@@ -274,14 +359,27 @@ unsigned short int CArithmeticCoder::InputBits(CFile &infile,
 	while(no_of_bits)
 	{
 		result <<= 1;
-		infile.Read(buffer,1);
+		if(!infile.Read(buffer,1))
+		{
+#ifdef DEBUG
+			cout << "ERROR! SHOULD HAVE RECEIVED END_OF_STREAM_SYMBOLCODE BEFORE END OF FILE"<<endl;
+#endif
+			ASSERT(FALSE);
+			return 0;
+		}
 		switch(buffer[0])
 		{
 		case '0':
 			result+=0;
+#ifdef DEBUG_BITS
+			cout << "0";
+#endif
 			break;
 		case '1':
 			result +=1;
+#ifdef DEBUG_BITS
+			cout << "1";
+#endif
 			break;
 		default:
 			ASSERT(FALSE);
@@ -303,14 +401,25 @@ CModel *CArithmeticCoder::GetModel(int context)
 	return m_adaptivemodel;
 }
 
-unsigned short int CArithmeticCoder::GetCurrentCount(unsigned short scale) const
+unsigned short int CArithmeticCoder::GetCurrentCount(unsigned short int scale) const
 {
+#ifdef DEBUG_CALCULATIONS
+//	cout << "Scale: "<<scale;
+#endif
 	long range;
 
 	unsigned short int count;
 
 	range = (long)(m_high-m_low) + 1;
-	count = (unsigned short int)((((long) (m_code - m_low) +1 ) * scale - 1) / range );
+#ifdef DEBUG_CALCULATIONS
+//	cout << ", range: "<<range;
+#endif
+	count = (unsigned short int)
+		((((long) (m_code - m_low) +1 ) * scale - 1) / range );
+#ifdef DEBUG_CALCULATIONS
+	cout << ", count = (("<< m_code <<"-"<< m_low<<"+1)*"<<scale<<"-1)/"<<range<<")\n";
+	cout << "(count="<<count<<")\n";
+#endif
 	return count;
 }
 
@@ -321,11 +430,20 @@ void CArithmeticCoder::RemoveSymbolFromStream(CFile &in, CSymbolData &symboldata
 	range = (long)(m_high - m_low) +1;
 	m_high = m_low + (unsigned short int) 
 		((range * symboldata.GetHighCount()) / symboldata.GetScale() -1);
+#ifdef DEBUG_CALCULATIONS
+	cout << "(L = "<<m_low<<"+"<<range<<"*"<<symboldata.GetLowCount();
+	cout << "/"<< symboldata.GetScale()<<")"<<endl;
+	cout << "(H = "<<m_low<<"+"<<range<<"*"<<symboldata.GetHighCount();
+	cout << "/"<< symboldata.GetScale()<<"-1)"<<endl;
+#endif
 	m_low = m_low + (unsigned short int) 
 		((range * symboldata.GetLowCount()) / symboldata.GetScale());
 
 	while(true)
 	{
+#ifdef DEBUG_LOW_HIGH
+		cout << "(" << m_low << "-" << m_high << ")";
+#endif
 		if( (m_high & 0x8000) == (m_low & 0x8000) )
 		{
 		}
@@ -340,12 +458,6 @@ void CArithmeticCoder::RemoveSymbolFromStream(CFile &in, CSymbolData &symboldata
 		{
 			return;
 		}
-#ifdef DEBUG
-		if(m_code&0x8000)
-			cout << "1";
-		else
-			cout << "0";
-#endif
 
 		m_low <<= 1;
 		m_high <<= 1;

@@ -12,9 +12,9 @@ class CSymbolData
 {
 public:
 	CSymbolData(CSymbol *symbol, 
-				 unsigned short low_count, 
-				 unsigned short high_count, 
-				 unsigned short scale);
+				 unsigned short int low_count, 
+				 unsigned short int high_count, 
+				 unsigned short int scale);
 	virtual ~CSymbolData();
 
 	unsigned short int GetHighCount() const;

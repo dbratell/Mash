@@ -39,7 +39,7 @@ private:
 		unsigned int no_of_bits=1);
 	unsigned short int InputBits(CFile &infile, 
 		unsigned int no_of_bits= 1);
-	unsigned short int GetCurrentCount(unsigned short scale) const;
+	unsigned short int GetCurrentCount(unsigned short int scale) const;
 	void RemoveSymbolFromStream(CFile &in, CSymbolData &symboldata);
 
 	CModel *GetModel(int context);

@@ -30,11 +30,8 @@ public:
 	void UpdateWithWord(const WORD symbolcode);
 	unsigned short int GetScale() const;
 	
-	//void AddSymbolToCount(CSymbol &new_symbol);
-	//void PrintSymbolCounts();
-	//void ConstructModelFromCounts();
 private:
-	unsigned short m_totalcount;
+	unsigned short int m_totalcount;
 	CMapWordToPtr m_symbolcountmap;
 //	CList<CSymbolData,CSymbolData&> m_symboldatalist;
 	list<CSymbolCount*> m_symbolcountlist;

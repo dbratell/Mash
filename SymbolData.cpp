@@ -16,9 +16,9 @@ static char THIS_FILE[]=__FILE__;
 //////////////////////////////////////////////////////////////////////
 
 CSymbolData::CSymbolData(CSymbol *symbol, 
-						 unsigned short low_count, 
-						 unsigned short high_count, 
-						 unsigned short scale) :
+						 unsigned short int low_count, 
+						 unsigned short int high_count, 
+						 unsigned short int scale) :
 		m_symbol(symbol),
 		m_low_count(low_count), 
 		m_high_count(high_count),
