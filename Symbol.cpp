@@ -23,7 +23,6 @@ CSymbol::CSymbol()
 CSymbol::CSymbol(const CSymbol &other)
 {
 	m_code = other.m_code;
-//	m_description = other.m_description;
 }
 
 CSymbol::~CSymbol()

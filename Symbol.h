@@ -21,12 +21,9 @@ public:
 	CSymbol();
 	CSymbol(const CSymbol &s);
 	virtual ~CSymbol();
-//	CString &GetDescription() {return m_description;}
-//	void SetDescription(CString &new_description) {m_description = new_description;}
 
 private:
 	WORD m_code;
-//	CString m_description;
 };
 
 

@@ -34,9 +34,8 @@ public:
 	
 private:
 	unsigned short int m_totalcount;
-	CMapWordToPtr m_symbolcountmap;
-//	CList<CSymbolData,CSymbolData&> m_symboldatalist;
 	list<CSymbolCount*> m_symbolcountlist;
+	void ScaleModel();
 };
 
 #endif // !defined(ADAPTIVEMODEL_H)

@@ -12,6 +12,7 @@
 #include "Coder.h"
 #include "Symbol.h"
 #include "Model.h"
+#include "Context.h"
 
 class CArithmeticCoder : public CCoder  
 {
@@ -24,12 +25,11 @@ public:
 	void DecodeFile(CFile &in, CFile &out);
 private:
 	unsigned short int m_code;
-	//CModel m_model;
 	unsigned short int m_low;
 	unsigned short int m_high;
 	long m_underflow_bits;
+	CContext *m_context;
 
-//	void BuildModel(CFile &input/*, CFile &output*/);
 	void InitializeArithmeticEncoder();
 	void InitializeArithmeticDecoder(CFile &infile);
 	void EncodeSymbol(CFile &outfile, CSymbolData &symboldata);
@@ -41,13 +41,6 @@ private:
 		unsigned int no_of_bits= 1);
 	unsigned short int GetCurrentCount(unsigned short int scale) const;
 	void RemoveSymbolFromStream(CFile &in, CSymbolData &symboldata);
-
-	CModel *GetModel(int context);
-
-	CModel *m_staticmodel;
-	CModel *m_adaptivemodel;
-
-
 
 };
 

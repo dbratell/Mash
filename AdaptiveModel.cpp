@@ -18,13 +18,19 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 #ifdef DEBUG
-#define DEBUG_PROBABILITY
+//#define DEBUG_PROBABILITY
 //#define DEBUG_INCODES
+#define DEBUG_MODEL_COUNT
 #endif
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
+
+#ifdef DEBUG_MODEL_COUNT
+	static long number_of_models = 0;
+#endif
+
 
 CAdaptiveModel::CAdaptiveModel()
 {
@@ -32,45 +38,33 @@ CAdaptiveModel::CAdaptiveModel()
 
 	CSymbol *escape = new CSymbol();
 	escape->SetCode(ESCAPE_SYMBOLCODE);
-//	CString description("ESCAPESYMBOL");
-//	escape->SetDescription(description);
 	CSymbolCount *sc = new CSymbolCount();
 
 	sc->SetSymbol(escape);
 	sc->SetCount(1);
 	m_symbolcountlist.push_front(sc);
 	m_totalcount=1;
-	
 
-//	m_symbolcountlist.
+#ifdef DEBUG_MODEL_COUNT
+	++number_of_models;
+	if(!(number_of_models%100))
+		cout << number_of_models << " ";
+#endif
 
 }
 
 CAdaptiveModel::~CAdaptiveModel()
 {
-	POSITION pos;
-	WORD w;
-	void *pointer;
-	CSymbolCount *sc;
-	// Clean up m_symbolcountmap
-	pos = m_symbolcountmap.GetStartPosition();
-	while(pos != NULL)
-	{
-		m_symbolcountmap.GetNextAssoc(pos, w, pointer);
-		sc = reinterpret_cast<CSymbolCount *>(pointer);
-		CSymbol *symbol = sc->GetSymbol();
-		// printf("Delete %d\n", symbol->GetCode());
-		delete symbol;
-		delete sc;
-	}
-	m_symbolcountmap.RemoveAll();
-
 	while(!m_symbolcountlist.empty())
 	{
 		CSymbolCount *sc = m_symbolcountlist.front();
 		m_symbolcountlist.pop_front();
 		delete sc;
 	}
+
+#ifdef DEBUG_MODEL_COUNT
+	number_of_models--;
+#endif
 }
 
 unsigned short int CAdaptiveModel::GetScale() const
@@ -111,7 +105,6 @@ void CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode,
 			if(symbol)
 			{
 				symbol->SetCode(sc.GetSymbol()->GetCode());
-//				symbol->SetDescription(sc.GetSymbol()->GetDescription());
 			}
 			else
 			{
@@ -151,7 +144,6 @@ void CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode,
 			if(symbol)
 			{
 				symbol->SetCode(sc.GetSymbol()->GetCode());
-//				symbol->SetDescription(sc.GetSymbol()->GetDescription());
 			}
 			else
 			{
@@ -182,6 +174,13 @@ void CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode,
  */
 void CAdaptiveModel::UpdateWithWord(const WORD symbolcode)
 {
+	// The algorithm can only take 14 bit total
+	while(m_totalcount > 16383) 
+	{
+		ScaleModel();
+	}
+
+
 	m_totalcount++;
 	list<CSymbolCount*>::iterator it;
 
@@ -246,16 +245,7 @@ void CAdaptiveModel::UpdateWithWord(const WORD symbolcode)
 	// Wasn't in list at all
 	CSymbol *newsymbol = new CSymbol();
 	newsymbol->SetCode(symbolcode);
-/*	if(symbolcode>0 && symbolcode<256 && isprint(symbolcode))
-	{
-		char c[2], *ch;
-		c[0] = static_cast<char>(symbolcode);
-		c[1] = '\0';
-		ch = c;
-		CString str(ch);
-		newsymbol->SetDescription(str);
-	}
-*/	CSymbolCount *sc = new CSymbolCount();
+	CSymbolCount *sc = new CSymbolCount();
 
 	sc->SetSymbol(newsymbol);
 	sc->SetCount(1);
@@ -298,7 +288,6 @@ void CAdaptiveModel::MakeSymbolDataFromCode(unsigned short int count,
 	if(symbol)
 	{
 		symbol->SetCode(sc.GetSymbol()->GetCode());
-//		symbol->SetDescription(sc.GetSymbol()->GetDescription());
 	}
 	else
 	{
@@ -312,3 +301,25 @@ void CAdaptiveModel::MakeSymbolDataFromCode(unsigned short int count,
 	return;
 }
 
+/**
+ * Halves all values in the model. This is used to keep the total within 14 bits.
+ */
+void CAdaptiveModel::ScaleModel()
+{
+	int new_total=0;
+	list<CSymbolCount*>::iterator it;
+
+	while(it != m_symbolcountlist.end())
+	{
+		int new_count;
+		CSymbolCount *sc = m_symbolcountlist.front();
+		new_count = sc->GetCount();
+		if(new_count>1)
+			new_count /= 2;
+		sc->SetCount(new_count);
+		new_total += new_count;
+		it++;
+	}
+
+	m_totalcount = new_total;
+}

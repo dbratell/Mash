@@ -49,15 +49,11 @@ void CStaticModel::MakeSymbolDataFromWord(const WORD symbolcode,
 	if(symbol)
 	{
 		symbol->SetCode(symbolcode);
-//		CString string("<escaped symbol>");
-//		symbol->SetDescription(string);
 	}
 	else
 	{
 		symbol = new CSymbol();
 		symbol->SetCode(symbolcode);
-//		CString string("<escaped symbol>");
-//		symbol->SetDescription(string);
 		symboldata.SetSymbol(symbol);
 	}
 
@@ -94,15 +90,11 @@ void CStaticModel::MakeSymbolDataFromCode(unsigned short int count,
 	if(symbol)
 	{
 		symbol->SetCode(count);
-//		CString string("<escaped symbol>");
-//		symbol->SetDescription(string);
 	}
 	else
 	{
 		symbol = new CSymbol();
 		symbol->SetCode(count);
-//		CString string("<escaped symbol>");
-//		symbol->SetDescription(string);
 		symboldata.SetSymbol(symbol);
 	}
 
