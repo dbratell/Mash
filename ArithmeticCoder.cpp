@@ -29,18 +29,29 @@ static char THIS_FILE[]=__FILE__;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * Default constructor.
+ */
 CArithmeticCoder::CArithmeticCoder()
 {
-	m_context = new CContext(3);
+	m_context = new CContext(2);
 
 }
 
+/**
+ * Destructor
+ */
 CArithmeticCoder::~CArithmeticCoder()
 {
 	delete m_context;
 }
 
 
+/**
+ *  Codes the infile into the outfile
+ * 
+ *  XXX: Errorhandling?
+ */
 void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 {
 	CSymbolData symboldata;
@@ -110,8 +121,12 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 		{
 			break;
 		}
-		CModel *model = m_context->GetModel(0);
-		model->UpdateWithWord(buffer);
+		// Update all used models
+		for(int i=backoff; i<=0; i++)
+		{
+			CModel *realmodel = m_context->GetModel(i);
+			realmodel->UpdateWithWord(context);
+		}
 		m_context->AddHistory(symbolcode_to_send);
 
 	}
@@ -124,6 +139,12 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 
 }
 
+/**
+ *  Assumes that the in file is coded using Mash and fills the outfile
+ *  with the decoded data.
+ * 
+ *  XXX: Errorhandling?
+ */
 void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 {
 	CSymbolData symboldata;
@@ -169,8 +190,12 @@ void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 			else
 			{
 				escapesymbol = false;
-				CModel *realmodel = m_context->GetModel(0);
-				realmodel->UpdateWithWord(context);
+				// Update all used models
+				for(int i=backoff; i<=0; i++)
+				{
+					CModel *realmodel = m_context->GetModel(i);
+					realmodel->UpdateWithWord(context);
+				}
 				m_context->AddHistory(context);
 			}
 		} while(escapesymbol);
@@ -188,6 +213,10 @@ void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 
 }
 
+/**
+ * Initializes the encoder part of the coder. Must be called
+ * before starting encoding.
+ */
 void CArithmeticCoder::InitializeArithmeticEncoder()
 {
 	// XXX: Move to the constructor?
@@ -199,6 +228,10 @@ void CArithmeticCoder::InitializeArithmeticEncoder()
 	m_underflow_bits = 0;
 }
 
+/**
+ * Initializes the decoder part of the coder. Must be called
+ * before starting decoding.
+ */
 void CArithmeticCoder::InitializeArithmeticDecoder(CFile &infile)
 {
 	// XXX: Move to the constructor?
@@ -216,6 +249,9 @@ void CArithmeticCoder::InitializeArithmeticDecoder(CFile &infile)
 
 }
 
+/**
+ * Convert a symbol to bits which are sent to the outfile.
+ */
 void CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
 {
 	ASSERT(m_high > m_low);
@@ -282,7 +318,9 @@ void CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
 
 }
 
-
+/**
+ * Empty the registers used during coding.
+ */
 void CArithmeticCoder::FlushArithmeticEncoder(CFile &outfile)
 {
 #ifdef DEBUG_IN_OUT
@@ -309,6 +347,11 @@ void CArithmeticCoder::FlushArithmeticEncoder(CFile &outfile)
 	}
 }
 
+/**
+ * Output bits to the file. The bits are taken from the Most significant
+ * bits first.
+ * // XXX: Writes chars '0' and '1' instead of real bits
+ */
 void CArithmeticCoder::OutputBits(CFile &outfile, 
 								  unsigned short int bits, 
 								  unsigned int no_of_bits /* = 1 */) 
@@ -344,6 +387,10 @@ void CArithmeticCoder::OutputBits(CFile &outfile,
 
 }
 
+/**
+ * Reads bits from the input. 
+ * // XXX: Reads chars '0' and '1' instead of real bits
+ */
 unsigned short int CArithmeticCoder::InputBits(CFile &infile, 
 								  unsigned int no_of_bits /* = 1 */) 
 {
@@ -388,16 +435,6 @@ unsigned short int CArithmeticCoder::InputBits(CFile &infile,
 	return result;
 }
 
-
-/*CModel *CArithmeticCoder::GetModel(int context)
-{
-	if(ESCAPE_SYMBOLCODE == context)
-		return m_staticmodel;
-
-	ASSERT(context>=0 && context<256);
-	return m_adaptivemodel[context];
-}
-*/
 
 unsigned short int CArithmeticCoder::GetCurrentCount(unsigned short int scale) const
 {

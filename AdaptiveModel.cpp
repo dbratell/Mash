@@ -307,12 +307,12 @@ void CAdaptiveModel::MakeSymbolDataFromCode(unsigned short int count,
 void CAdaptiveModel::ScaleModel()
 {
 	int new_total=0;
-	list<CSymbolCount*>::iterator it;
+	list<CSymbolCount*>::iterator it = m_symbolcountlist.begin();
 
 	while(it != m_symbolcountlist.end())
 	{
 		int new_count;
-		CSymbolCount *sc = m_symbolcountlist.front();
+		CSymbolCount *sc = *it;
 		new_count = sc->GetCount();
 		if(new_count>1)
 			new_count /= 2;
