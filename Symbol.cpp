@@ -23,7 +23,7 @@ CSymbol::CSymbol()
 CSymbol::CSymbol(const CSymbol &other)
 {
 	m_code = other.m_code;
-	m_description = other.m_description;
+//	m_description = other.m_description;
 }
 
 CSymbol::~CSymbol()
@@ -31,12 +31,3 @@ CSymbol::~CSymbol()
 
 }
 
-WORD CSymbol::GetCode()
-{
-	return m_code;
-}
-
-void CSymbol::SetCode(WORD new_code)
-{
-	m_code = static_cast<WORD>(new_code);
-}

@@ -39,27 +39,38 @@ CStaticModel::~CStaticModel()
 }
 
 
-CSymbolData *CStaticModel::MakeSymbolDataFromWord(const WORD symbolcode)
+void CStaticModel::MakeSymbolDataFromWord(const WORD symbolcode,
+		CSymbolData &symboldata /* OUT */)
 {
 #ifdef DEBUG_INCODES
 	cout << "code(S): "<<symbolcode<<endl;
 #endif
-	CSymbol *symbol = new CSymbol();
-	symbol->SetCode(symbolcode);
-	CString string("<escaped symbol>");
-	symbol->SetDescription(string);
+	CSymbol *symbol = symboldata.GetSymbol();
+	if(symbol)
+	{
+		symbol->SetCode(symbolcode);
+//		CString string("<escaped symbol>");
+//		symbol->SetDescription(string);
+	}
+	else
+	{
+		symbol = new CSymbol();
+		symbol->SetCode(symbolcode);
+//		CString string("<escaped symbol>");
+//		symbol->SetDescription(string);
+		symboldata.SetSymbol(symbol);
+	}
 
-	CSymbolData *sd = new CSymbolData(symbol,
-		symbolcode,
-		symbolcode+1,
-		END_OF_STREAM_SYMBOLCODE+1);
+	symboldata.SetLowCount(symbolcode);
+	symboldata.SetHighCount(symbolcode+1);
+	symboldata.SetScale(END_OF_STREAM_SYMBOLCODE+1);
 #ifdef DEBUG_PROBABILITY
 			float probability = ((float)1.0)/(END_OF_STREAM_SYMBOLCODE+1);
 			cout << " (" << probability;
 			cout << " = " << -log(probability)/log(2) << ")" ;
 #endif
 
-	return sd;
+	return;
 }
 
 void CStaticModel::UpdateWithWord(const WORD symbolcode)
@@ -72,20 +83,31 @@ unsigned short int CStaticModel::GetScale() const
 	return END_OF_STREAM_SYMBOLCODE+1;
 }
 
-CSymbolData *CStaticModel::MakeSymbolDataFromCode(unsigned short int count,
-		unsigned short int scale)
+void CStaticModel::MakeSymbolDataFromCode(unsigned short int count,
+		unsigned short int scale,
+		CSymbolData &symboldata /* OUT */)
 {
 #ifdef DEBUG_INCODES
 	cout << "decode(S): "<<count<<endl;
 #endif
-	CSymbol *symbol = new CSymbol();
-	symbol->SetCode(count);
-	CString string("<escaped symbol>");
-	symbol->SetDescription(string);
+	CSymbol *symbol = symboldata.GetSymbol();
+	if(symbol)
+	{
+		symbol->SetCode(count);
+//		CString string("<escaped symbol>");
+//		symbol->SetDescription(string);
+	}
+	else
+	{
+		symbol = new CSymbol();
+		symbol->SetCode(count);
+//		CString string("<escaped symbol>");
+//		symbol->SetDescription(string);
+		symboldata.SetSymbol(symbol);
+	}
 
-	CSymbolData *sd = new CSymbolData(symbol,
-		count,
-		count+1,
-		END_OF_STREAM_SYMBOLCODE+1);
-	return sd;
+	symboldata.SetLowCount(count);
+	symboldata.SetHighCount(count+1);
+	symboldata.SetScale(END_OF_STREAM_SYMBOLCODE+1);
+	return;
 }

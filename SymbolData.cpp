@@ -35,19 +35,23 @@ CSymbolData::~CSymbolData()
 
 void CSymbolData::SetLowCount(unsigned short int new_low)
 {
-	ASSERT(FALSE); // Don't call
 	m_low_count = new_low;
 }
 
 void CSymbolData::SetHighCount(unsigned short int new_high)
 {
-	ASSERT(FALSE); // Don't call
 	m_high_count = new_high;
+}
+
+void CSymbolData::SetScale(unsigned short int new_scale)
+{
+	m_scale = new_scale;
 }
 
 void CSymbolData::SetSymbol(CSymbol *new_symbol) 
 {
-	ASSERT(FALSE); // Don't call.
+	ASSERT((new_symbol == NULL) || (new_symbol != m_symbol));
+	delete m_symbol;
 	m_symbol = new_symbol;
 }
 

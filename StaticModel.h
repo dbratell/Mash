@@ -17,9 +17,11 @@ public:
 	CStaticModel();
 	virtual ~CStaticModel();
 
-	CSymbolData *MakeSymbolDataFromCode(unsigned short int count,
-		unsigned short int scale);
-	CSymbolData *MakeSymbolDataFromWord(const WORD symbolcode);
+	void MakeSymbolDataFromCode(unsigned short int count,
+		unsigned short int scale,
+		CSymbolData &symboldata /* OUT */);
+	void MakeSymbolDataFromWord(const WORD symbolcode,
+		CSymbolData &symboldata /* OUT */);
 	void UpdateWithWord(const WORD symbolcode);
 	unsigned short int GetScale() const;
 };

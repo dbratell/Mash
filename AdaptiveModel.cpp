@@ -32,8 +32,8 @@ CAdaptiveModel::CAdaptiveModel()
 
 	CSymbol *escape = new CSymbol();
 	escape->SetCode(ESCAPE_SYMBOLCODE);
-	CString description("ESCAPESYMBOL");
-	escape->SetDescription(description);
+//	CString description("ESCAPESYMBOL");
+//	escape->SetDescription(description);
 	CSymbolCount *sc = new CSymbolCount();
 
 	sc->SetSymbol(escape);
@@ -82,7 +82,8 @@ unsigned short int CAdaptiveModel::GetScale() const
 /**
  * Returns a reference to the symbol attached to the given code. 
  */ 
-CSymbolData *CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode)
+void CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode,
+											CSymbolData &symboldata /* OUT */)
 {
 #ifdef DEBUG_INCODES
 	cout << "code(A): "<<symbolcode<<endl;
@@ -106,17 +107,28 @@ CSymbolData *CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode)
 			else
 				bottom_value = (*it)->GetCount();
 
-			CSymbolData *sd = new CSymbolData(new CSymbol(*sc.GetSymbol()),
-				bottom_value,
-				top_value,
-				m_totalcount);
-			ASSERT(sd->GetLowCount() < sd->GetHighCount());
+			CSymbol *symbol = symboldata.GetSymbol();
+			if(symbol)
+			{
+				symbol->SetCode(sc.GetSymbol()->GetCode());
+//				symbol->SetDescription(sc.GetSymbol()->GetDescription());
+			}
+			else
+			{
+				symbol = new CSymbol(*sc.GetSymbol());
+				symboldata.SetSymbol(symbol);
+			}
+			symboldata.SetLowCount(bottom_value);
+			symboldata.SetHighCount(top_value);
+			symboldata.SetScale(m_totalcount);
+
+			ASSERT(bottom_value<top_value);
 #ifdef DEBUG_PROBABILITY
 			float probability = ((float)(top_value-bottom_value))/m_totalcount;
 			cout << " (" << probability;
 			cout << " = " << -log(probability)/log(2) << ")" ;
 #endif
-			return sd;
+			return;
 		}
 		it++;
 	}
@@ -135,24 +147,32 @@ CSymbolData *CAdaptiveModel::MakeSymbolDataFromWord(const WORD symbolcode)
 			else
 				bottom_value = 0; // not necessary
 
-			CSymbolData *sd = new CSymbolData(new CSymbol(*sc.GetSymbol()),
-				bottom_value,
-				top_value,
-				m_totalcount);
-			ASSERT(sd->GetLowCount() < sd->GetHighCount());
+			CSymbol *symbol = symboldata.GetSymbol();
+			if(symbol)
+			{
+				symbol->SetCode(sc.GetSymbol()->GetCode());
+//				symbol->SetDescription(sc.GetSymbol()->GetDescription());
+			}
+			else
+			{
+				symbol = new CSymbol(*sc.GetSymbol());
+				symboldata.SetSymbol(symbol);
+			}
+			symboldata.SetLowCount(bottom_value);
+			symboldata.SetHighCount(top_value);
+			symboldata.SetScale(m_totalcount);
+
+			ASSERT(bottom_value<top_value);
 #ifdef DEBUG_PROBABILITY
 			float probability = ((float)(top_value-bottom_value))/m_totalcount;
 			cout << " (" << probability;
 			cout << " = " << -log(probability)/log(2) << ")" ;
 #endif
-			return sd;
+			return;
 		}
 	}
 
 	ASSERT(FALSE); // Shouldn't be possible since the list must contain a escape symbol
-
-	// Silence compiler
-	return new CSymbolData(new CSymbol(),0,0,0);
 }
 
 /**
@@ -226,7 +246,7 @@ void CAdaptiveModel::UpdateWithWord(const WORD symbolcode)
 	// Wasn't in list at all
 	CSymbol *newsymbol = new CSymbol();
 	newsymbol->SetCode(symbolcode);
-	if(symbolcode>0 && symbolcode<256 && isprint(symbolcode))
+/*	if(symbolcode>0 && symbolcode<256 && isprint(symbolcode))
 	{
 		char c[2], *ch;
 		c[0] = static_cast<char>(symbolcode);
@@ -235,7 +255,7 @@ void CAdaptiveModel::UpdateWithWord(const WORD symbolcode)
 		CString str(ch);
 		newsymbol->SetDescription(str);
 	}
-	CSymbolCount *sc = new CSymbolCount();
+*/	CSymbolCount *sc = new CSymbolCount();
 
 	sc->SetSymbol(newsymbol);
 	sc->SetCount(1);
@@ -243,8 +263,9 @@ void CAdaptiveModel::UpdateWithWord(const WORD symbolcode)
 
 }
 
-CSymbolData *CAdaptiveModel::MakeSymbolDataFromCode(unsigned short int count,
-		unsigned short int scale)
+void CAdaptiveModel::MakeSymbolDataFromCode(unsigned short int count,
+		unsigned short int scale,
+		CSymbolData &symboldata /* OUT */)
 {
 #ifdef DEBUG_INCODES
 	cout << "decode(A): "<<count<<endl;
@@ -273,11 +294,21 @@ CSymbolData *CAdaptiveModel::MakeSymbolDataFromCode(unsigned short int count,
 	it--; // XXX: Remove?
 
 
-	CSymbolData *sd = new CSymbolData(new CSymbol(*sc.GetSymbol()),
-		low_count, 
-		high_count, 
-		scale);
+	CSymbol *symbol = symboldata.GetSymbol();
+	if(symbol)
+	{
+		symbol->SetCode(sc.GetSymbol()->GetCode());
+//		symbol->SetDescription(sc.GetSymbol()->GetDescription());
+	}
+	else
+	{
+		symbol = new CSymbol(*sc.GetSymbol());
+		symboldata.SetSymbol(symbol);
+	}
+	symboldata.SetLowCount(low_count);
+	symboldata.SetHighCount(high_count);
+	symboldata.SetScale(scale);
 
-	return sd;
+	return;
 }
 

@@ -11,17 +11,18 @@
 class CSymbolData
 {
 public:
-	CSymbolData(CSymbol *symbol, 
-				 unsigned short int low_count, 
-				 unsigned short int high_count, 
-				 unsigned short int scale);
+	CSymbolData(CSymbol *symbol=NULL, 
+				 unsigned short int low_count=0, 
+				 unsigned short int high_count=0, 
+				 unsigned short int scale=0);
 	virtual ~CSymbolData();
 
 	unsigned short int GetHighCount() const;
 	unsigned short int GetLowCount() const;
 	unsigned short int GetScale() const;
-	void SetHighCount(unsigned short int new_high);
+	void SetScale(unsigned short int new_scale);
 	void SetLowCount(unsigned short int new_low);
+	void SetHighCount(unsigned short int new_high);
 	CSymbol *GetSymbol();
 	void SetSymbol(CSymbol *new_symbol);
 

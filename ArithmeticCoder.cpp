@@ -45,6 +45,7 @@ CArithmeticCoder::~CArithmeticCoder()
 
 void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 {
+	CSymbolData symboldata;
 	unsigned char buffer;
 
 	InitializeArithmeticEncoder();
@@ -83,15 +84,16 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 		do
 		{
 			CModel *model = GetModel(context);
-			CSymbolData *symboldata = model->MakeSymbolDataFromWord(
-				static_cast<WORD>(symbol_code_to_send));
+			model->MakeSymbolDataFromWord(
+				static_cast<WORD>(symbol_code_to_send),
+				symboldata);
 #ifdef DEBUG_CALCULATIONS
 			cout << "(sd:"<<symboldata->GetLowCount()<<"-"<<
 				symboldata->GetHighCount()<<")"<<endl;
 #endif
-			EncodeSymbol(outfile, *symboldata);
+			EncodeSymbol(outfile, symboldata);
 			// Was it an escape symbol?
-			if(ESCAPE_SYMBOLCODE == symboldata->GetSymbol()->GetCode())
+			if(ESCAPE_SYMBOLCODE == symboldata.GetSymbol()->GetCode())
 			{
 #ifdef DEBUG
 				cout << "+";
@@ -103,8 +105,6 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 			{
 				escapesymbol = false;
 			}
-			delete symboldata;
-
 		} while(escapesymbol);
 
 		if(END_OF_STREAM_SYMBOLCODE == symbol_code_to_send)
@@ -128,6 +128,7 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 
 void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 {
+	CSymbolData symboldata;
 
 	InitializeArithmeticDecoder(in);
 
@@ -147,21 +148,17 @@ void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 			unsigned short int scale = model->GetScale();
 			unsigned short int count = GetCurrentCount(scale);
 
-			CSymbolData *symboldata = model->MakeSymbolDataFromCode(count,scale);
+			model->MakeSymbolDataFromCode(count,scale,symboldata);
 #ifdef DEBUG_CALCULATIONS
 			cout << "(sd:"<<symboldata->GetLowCount()<<"-"<<
 				symboldata->GetHighCount()<<")"<<endl;
 #endif
-			context = symboldata->GetSymbol()->GetCode();
+			context = symboldata.GetSymbol()->GetCode();
 			if(END_OF_STREAM_SYMBOLCODE == context)
 			{
-				delete symboldata;
-				symboldata = NULL;
 				return;
 			}
-			RemoveSymbolFromStream(in, *symboldata);
-			delete symboldata;
-			symboldata = NULL;
+			RemoveSymbolFromStream(in, symboldata);
 			if(ESCAPE_SYMBOLCODE == context)
 			{
 #ifdef DEBUG

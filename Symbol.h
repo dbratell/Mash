@@ -21,12 +21,23 @@ public:
 	CSymbol();
 	CSymbol(const CSymbol &s);
 	virtual ~CSymbol();
-	CString &GetDescription() {return m_description;}
-	void SetDescription(CString &new_description) {m_description = new_description;}
+//	CString &GetDescription() {return m_description;}
+//	void SetDescription(CString &new_description) {m_description = new_description;}
 
 private:
 	WORD m_code;
-	CString m_description;
+//	CString m_description;
 };
+
+
+inline WORD CSymbol::GetCode()
+{
+	return m_code;
+}
+
+inline void CSymbol::SetCode(WORD new_code)
+{
+	m_code = static_cast<WORD>(new_code);
+}
 
 #endif // !defined(AFX_SYMBOL_H__3774FDBB_1403_403B_B344_774EE68D0F7B__INCLUDED_)

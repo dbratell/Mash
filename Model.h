@@ -17,9 +17,11 @@ public:
 	CModel();
 	virtual ~CModel();
 
-	virtual	CSymbolData *MakeSymbolDataFromCode(unsigned short int count,
-		unsigned short int scale)=0;
-	virtual CSymbolData *MakeSymbolDataFromWord(const WORD symbolcode)=0;
+	virtual	void MakeSymbolDataFromCode(unsigned short int count,
+		unsigned short int scale,
+		CSymbolData &symboldata /* OUT */)=0;
+	virtual void MakeSymbolDataFromWord(const WORD symbolcode,
+		CSymbolData &symboldata /* OUT */)=0;
 	virtual void UpdateWithWord(const WORD symbolcode)=0;
 	virtual unsigned short int GetScale() const=0;
 	
