@@ -17,10 +17,14 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
-// #define FIXED_BLOCKSIZE 8192
-#define MINIMUM_BLOCKSIZE_FLUSH 1024
+// This must be big enough to allow a model to be built before checking
+// compression and must be small enough to detect change in the nature
+// of the input.
+#define MINIMUM_BLOCKSIZE_FLUSH 512
 
 // Number of "eigths" of the input that is the definition of "bad compression"
+// If this is too low, the models will be flushed to often, and if it's too
+// high, they won't be flushed often enough.
 #define BAD_COMPRESSION 6
 
 #ifdef DEBUG
@@ -42,7 +46,7 @@ static char THIS_FILE[]=__FILE__;
  */
 CArithmeticCoder::CArithmeticCoder()
 {
-	m_context = new CContext(6);
+	m_context = new CContext(2);
 }
 
 /**

@@ -20,7 +20,7 @@ static char THIS_FILE[]=__FILE__;
 #ifdef DEBUG
 //#define DEBUG_PROBABILITY
 //#define DEBUG_INCODES
-//#define DEBUG_MODEL_COUNT
+#define DEBUG_MODEL_COUNT
 #endif
 
 //////////////////////////////////////////////////////////////////////

@@ -7,6 +7,11 @@
 
 #include "AdaptiveModel.h"
 
+#ifdef DEBUG
+#include <iostream>
+using namespace std;
+#endif
+
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
@@ -14,9 +19,13 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-#define TOTAL_SIZE_CUTOFF 5
+#define TOTAL_SIZE_CUTOFF 3
 #define AVERAGE_COUNT_CUTOFF 2
-#define MODELSETSIZE_CUTOFF 50
+#define MODELSETSIZE_CUTOFF 10
+
+#ifdef DEBUG
+//#define DEBUG_FLUSHING
+#endif
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -98,6 +107,10 @@ void CModelSet::HalveAndClear()
 		} 
 		else 
 		{
+#ifdef DEBUG_FLUSHING
+		cout << "Behåll modell (" << (*it).second->Size() << ") ";
+#endif
+
 			it++;
 		}
 	}

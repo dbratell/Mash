@@ -40,10 +40,7 @@ public:
 private:
 	int Size();
 
-	
 	CAdaptiveModel *m_model;
-	
-//	CModelSetVector m_modelsetvector;
 	CModelSetMap m_modelsetmap;
 };
 
