@@ -1,0 +1,26 @@
+// ArchiveHeader.cpp: implementation of the CArchiveHeader class.
+//
+//////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+#include "ArchiveHeader.h"
+
+#ifdef _DEBUG
+#undef THIS_FILE
+static char THIS_FILE[]=__FILE__;
+#define new DEBUG_NEW
+#endif
+
+//////////////////////////////////////////////////////////////////////
+// Construction/Destruction
+//////////////////////////////////////////////////////////////////////
+
+CArchiveHeader::CArchiveHeader()
+{
+
+}
+
+CArchiveHeader::~CArchiveHeader()
+{
+
+}
