@@ -45,3 +45,8 @@ void CSymbolCount::SetSymbol(CSymbol *new_symbol)
 	delete m_symbol;
 	m_symbol = new_symbol; 
 }
+
+unsigned short int CSymbolCount::GetCount() 
+{
+	return m_count;
+}

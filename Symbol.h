@@ -10,8 +10,9 @@
 #endif // _MSC_VER > 1000
 
 #define ESCAPE_SYMBOLCODE 256
+#define FLUSH_MODEL_SYMBOLCODE 257
 // END_OF_STREAM_SYMBOLCODE _MUST_ be the highest symbolcodenumber
-#define END_OF_STREAM_SYMBOLCODE 257 
+#define END_OF_STREAM_SYMBOLCODE 258 
 
 class CSymbol  
 {

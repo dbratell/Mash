@@ -18,7 +18,7 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
-#define MAX_ORDER 3
+#define MAX_ORDER 6
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -28,10 +28,17 @@ CContext::CContext(int order /* =1 */) : m_current_order(0)
 	if(order>MAX_ORDER)
 	{
 		m_order = MAX_ORDER;
+#ifdef DEBUG
+		cout << "ILLEGAL ORDER! Max is "<< MAX_ORDER << " and you said " 
+			<< order << endl;
+#endif
 	}
 	else if(order<0)
 	{
 		m_order = 0;
+#ifdef DEBUG
+		cout << "ILLEGAL ORDER! Mus pe positive and you said " << order << endl;
+#endif
 	}
 	else
 	{
@@ -49,6 +56,7 @@ CContext::CContext(int order /* =1 */) : m_current_order(0)
 CContext::~CContext()
 {
 	delete[] m_history;
+	delete m_models;
 }
 
 int CContext::GetOrder()
@@ -150,6 +158,10 @@ void CContext::ResetContext()
 	delete m_models;
 	m_models = new CModelSet();
 
-	
-
 }
+
+void CContext::DampenHistory()
+{
+	m_models->HalveAndClear();
+}
+

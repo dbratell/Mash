@@ -12,6 +12,8 @@
 #pragma warning(disable:4786)
 
 #include "Model.h"
+#include "AdaptiveModel.h"
+
 //#include <vector>
 #include <map>
 
@@ -30,12 +32,16 @@ public:
 
 	CModel *GetModel();
 	CModelSet *GetSubModelSet(int i);
+	void HalveAndClear();
 #ifdef DEBUG
 	void Dump();
 #endif
 
 private:
-	CModel *m_model;
+	int Size();
+
+	
+	CAdaptiveModel *m_model;
 	
 //	CModelSetVector m_modelsetvector;
 	CModelSetMap m_modelsetmap;

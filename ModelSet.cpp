@@ -14,18 +14,16 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
+#define TOTAL_SIZE_CUTOFF 5
+#define AVERAGE_COUNT_CUTOFF 2
+#define MODELSETSIZE_CUTOFF 50
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CModelSet::CModelSet() : m_model(NULL)
 {
-/*	m_modelsetvector.reserve(256);
-	for(int i = 0; i<256; i++)
-	{
-		m_modelsetvector[i]=NULL;
-	}
-*/
 }
 
 CModelSet::~CModelSet()
@@ -39,12 +37,6 @@ CModelSet::~CModelSet()
 		delete (*it).second;
 		it++;
 	}
-
-/*	for(int i=0; i<256; i++)
-	{
-		delete m_modelsetvector[i];
-	}
-	*/
 }
 
 CModel *CModelSet::GetModel()
@@ -65,16 +57,73 @@ CModelSet *CModelSet::GetSubModelSet(int index)
 		return (*it).second;
 	}
 
+	// There was no earlier model
+
 	CModelSet *modelset = new CModelSet();
 	m_modelsetmap[index] = modelset;
 
 	return modelset;
 
-/*	if(NULL == m_modelsetvector[index])
-		m_modelsetvector[index] = new CModelSet();
+}
 
-	return m_modelsetvector[index];
-	*/
+void CModelSet::HalveAndClear()
+{
+	if(NULL != m_model)
+	{
+		m_model->ScaleModel();
+		// If the model is tiny, delete it
+		int size = m_model->GetTotalEntries();
+		int entries = m_model->GetDifferentEntries();
+		if((size < TOTAL_SIZE_CUTOFF) ||
+			(entries*AVERAGE_COUNT_CUTOFF > size))
+		{
+			delete m_model;
+			m_model = NULL;
+		}
+	}
+
+	// Recurse
+	CModelSetMap::iterator it = m_modelsetmap.begin();
+
+	while(it != m_modelsetmap.end())
+	{
+		(*it).second->HalveAndClear();
+		if((*it).second->Size() < MODELSETSIZE_CUTOFF)
+		{
+			delete (*it).second;
+			it = m_modelsetmap.erase(it);
+//			it++;
+			// it will point to the next element in the map
+			// XXX: Will the map have the same "order" as before?
+		} 
+		else 
+		{
+			it++;
+		}
+	}
+}
+
+int CModelSet::Size()
+{
+	int size = 0;
+	if(NULL != m_model)
+	{
+		size = m_model->GetTotalEntries();
+	}
+
+	CModelSetMap::iterator it = m_modelsetmap.begin();
+
+	while(it != m_modelsetmap.end())
+	{
+		CModelSet *set = (*it).second;
+		if(set != NULL)
+		{
+			size += set->Size();
+		}
+		it++;
+	}
+
+	return size;
 }
 
 #ifdef DEBUG
@@ -83,12 +132,12 @@ void CModelSet::Dump()
 	if(NULL != m_model)
 		m_model->Dump();
 
-	for(int i = 0; i<256; i++)
+	CModelSetMap::iterator it = m_modelsetmap.begin();
+
+	while(it != m_modelsetmap.end())
 	{
-		if(NULL != m_modelsetvector[i])
-		{
-			m_modelsetvector[i]->Dump();
-		}
+		(*it).second->Dump();
+		it++;
 	}
 }
 #endif

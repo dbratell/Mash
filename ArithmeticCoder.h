@@ -24,6 +24,7 @@ public:
 	void EncodeFile(CFile &in, CFile &out);
 	void DecodeFile(CFile &in, CFile &out);
 private:
+//	long m_current_blocksize;
 	unsigned short int m_code;
 	unsigned short int m_low;
 	unsigned short int m_high;
@@ -32,7 +33,7 @@ private:
 
 	void InitializeArithmeticEncoder();
 	void InitializeArithmeticDecoder(CFile &infile);
-	void EncodeSymbol(CFile &outfile, CSymbolData &symboldata);
+	int EncodeSymbol(CFile &outfile, CSymbolData &symboldata);
 	void FlushArithmeticEncoder(CFile &outfile);
 	void OutputBits(CFile &outfile, 
 		unsigned short int bits, 

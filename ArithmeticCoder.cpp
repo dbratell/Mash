@@ -17,6 +17,12 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
+// #define FIXED_BLOCKSIZE 8192
+#define MINIMUM_BLOCKSIZE_FLUSH 1024
+
+// Number of "eigths" of the input that is the definition of "bad compression"
+#define BAD_COMPRESSION 6
+
 #ifdef DEBUG
 //#define DEBUG_CALCULATIONS
 //#define DEBUG_UNDERFLOW_CALCULATIONS
@@ -24,6 +30,7 @@ static char THIS_FILE[]=__FILE__;
 //#define DEBUG_LOW_HIGH
 //#define DEBUG_IN_OUT
 //#define DEBUG_DUMP
+#define DEBUG_FLUSH
 #endif
 
 //////////////////////////////////////////////////////////////////////
@@ -35,8 +42,7 @@ static char THIS_FILE[]=__FILE__;
  */
 CArithmeticCoder::CArithmeticCoder()
 {
-	m_context = new CContext(2);
-
+	m_context = new CContext(6);
 }
 
 /**
@@ -57,10 +63,11 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 {
 	CSymbolData symboldata;
 	unsigned char buffer;
+	long current_blocksize = 0;
+	long output_block_bits = 0; // number of output bits
+	bool send_flush = false;
 
 	InitializeArithmeticEncoder();
-
-//	int context = 0;
 
 	WORD symbolcode_to_send;
 
@@ -69,8 +76,13 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 	{
 		backoff = 0;
 
-		if(infile.Read(&buffer,1))
+		if(send_flush)
 		{
+			symbolcode_to_send = FLUSH_MODEL_SYMBOLCODE;
+		} 
+		else if(infile.Read(&buffer,1))
+		{
+			current_blocksize += 1;
 			symbolcode_to_send = buffer;
 			m_inbits += 8;
 		}
@@ -81,13 +93,16 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 
 
 #ifdef DEBUG_IN_OUT
-		if(END_OF_STREAM_SYMBOLCODE != symbolcode_to_send)
+		switch(symbolcode_to_send)
 		{
-			cout << "\nIn: '" << buffer << "'\n" << "Out: ";
-		}
-		else
-		{
+		case END_OF_STREAM_SYMBOLCODE:
 			cout << "\nIn: EOF\nOut: ";
+			break;
+		case FLUSH_MODEL_SYMBOLCODE:
+			cout << "\nIn: FLUSH_MODEL\nOut: ";
+			break;
+		default:
+			cout << "\nIn: '" << buffer << "'\n" << "Out: ";
 		}
 #endif
 		bool escapesymbol = false;
@@ -102,7 +117,7 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 			cout << "(sd:"<<symboldata.GetLowCount()<<"-"<<
 				symboldata.GetHighCount()<<")"<<endl;
 #endif
-			EncodeSymbol(outfile, symboldata);
+			output_block_bits += EncodeSymbol(outfile, symboldata);
 			// Was it an escape symbol?
 			if(ESCAPE_SYMBOLCODE == symboldata.GetSymbol()->GetCode())
 			{
@@ -117,25 +132,59 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 				escapesymbol = false;
 			}
 		} while(escapesymbol);
-
+		
 		if(END_OF_STREAM_SYMBOLCODE == symbolcode_to_send)
 		{
 			break;
 		}
-		// Update all used models
-		for(int i=backoff; i<=0; i++)
+		
+		if(FLUSH_MODEL_SYMBOLCODE == symbolcode_to_send)
 		{
-			CModel *model = m_context->GetModel(i);
-			model->UpdateWithWord(symbolcode_to_send);
+			send_flush = false;
+			m_context->DampenHistory();
+			current_blocksize = 0;
+			output_block_bits = 0;
 		}
-		m_context->AddHistory(symbolcode_to_send);
+		else
+		{
+			// Update all used models
+			for(int i=backoff; i<=0; i++)
+			{
+				CModel *model = m_context->GetModel(i);
+				model->UpdateWithWord(symbolcode_to_send);
+			}
+			m_context->AddHistory(symbolcode_to_send);
+		}
 #ifdef DEBUG_DUMP
 		cout << endl << endl << "DUMPING ENCODING CONTEXT" << endl;
 		m_context->Dump();
 #endif
+		if(current_blocksize >= MINIMUM_BLOCKSIZE_FLUSH)
+		{
+			// Check if this block was badly compressed, in that case
+			// reset the buffers
+			if((current_blocksize * BAD_COMPRESSION) < output_block_bits)
+			{
+#ifdef DEBUG_FLUSH
+				cout << "Too bad compression: Inbits: " << current_blocksize*8;
+				cout << ", outbits: " << output_block_bits << endl;
+#endif
+				send_flush = true;
+			}
+			else
+			{
+#ifdef DEBUG_FLUSH
+				cout << "Good enough compression: Inbits: " << current_blocksize*8;
+				cout << ", outbits: " << output_block_bits << endl;
+#endif
+			}
 
-	}
+			current_blocksize = 0;
+			output_block_bits = 0;
+		}
+	} // while(true)
 
+	// Output bits waiting for the decision.
 	FlushArithmeticEncoder(outfile);
 #ifdef DEBUG_IN_OUT
 	cout << "ZEROES";
@@ -153,6 +202,7 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 {
 	CSymbolData symboldata;
+//	long current_blocksize = 0;
 
 	InitializeArithmeticDecoder(in);
 
@@ -198,26 +248,35 @@ void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 			}
 		} while(escapesymbol);
 
-		// Update all used models
-		for(int i=backoff; i<=0; i++)
+		if(FLUSH_MODEL_SYMBOLCODE == context)
 		{
-			CModel *realmodel = m_context->GetModel(i);
-			realmodel->UpdateWithWord(context);
+			m_context->DampenHistory();
+		} 
+		else
+		{
+			// Update all used models
+			for(int i=backoff; i<=0; i++)
+			{
+				CModel *realmodel = m_context->GetModel(i);
+				realmodel->UpdateWithWord(context);
+			}
+			m_context->AddHistory(context);
+
+			ASSERT(context>=0 && context<256);
+			char buffer[1];
+			buffer[0] = static_cast<char>(context);
+			out.Write(buffer,1);
+//			current_blocksize += 1;
+			m_outbits += 8;
 		}
-		m_context->AddHistory(context);
 #ifdef DEBUG_DUMP
 		cout << endl << endl << "DUMPING DECODING CONTEXT" << endl;
 		m_context->Dump();
 #endif
 
-		ASSERT(context>=0 && context<256);
-		char buffer[1];
-		buffer[0] = static_cast<char>(context);
-		out.Write(buffer,1);
 #ifdef DEBUG_IN_OUT
 		cout << "\nOut: " << buffer[0]<<endl;
 #endif
-		m_outbits += 8;
 
 	}
 
@@ -261,9 +320,12 @@ void CArithmeticCoder::InitializeArithmeticDecoder(CFile &infile)
 
 /**
  * Convert a symbol to bits which are sent to the outfile.
+ * Returns the number of bits sent. This is not the same as
+ * the number of bits the symbol was worth.
  */
-void CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
+int CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
 {
+	int bits = 0;
 	ASSERT(m_high > m_low);
 	// Calculate new range
 	long range = (m_high-m_low)+1;
@@ -277,7 +339,7 @@ void CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
 #endif
 	m_low = m_low + (unsigned short int)
 		(( range * symboldata.GetLowCount()) / symboldata.GetScale());
-	ASSERT(m_high >= m_low); // XXX: Got Assertions with strict inequality
+	ASSERT(m_high > m_low); // XXX: Got Assertions with strict inequality
 
 	// Output data if we can
 
@@ -292,11 +354,13 @@ void CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
 			OutputBits(outfile,
 				m_high & 0x8000,
 				1);
+			bits += 1;
 			while(m_underflow_bits>0) {
 				// Output all stored underflow bits
 				OutputBits(outfile,
 					(~m_high) & 0x8000,
 					1);
+				bits += 1;
 				m_underflow_bits--;
 #ifdef DEBUG_UNDERFLOW_CALCULATIONS
 				cout << "(u--="<<m_underflow_bits<<")";
@@ -314,7 +378,7 @@ void CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
 		}
 		else
 		{
-			return;
+			return bits;
 		}
 
 		// Shift the rest if the bits
@@ -324,7 +388,7 @@ void CArithmeticCoder::EncodeSymbol(CFile &outfile, CSymbolData &symboldata)
 		m_high |= 1;
 
 		ASSERT(m_high > m_low);
-	}
+	} // while(true)
 
 }
 
@@ -492,11 +556,10 @@ void CArithmeticCoder::RemoveSymbolFromStream(CFile &in, CSymbolData &symboldata
 		if( (m_high & 0x8000) == (m_low & 0x8000) )
 		{
 		}
-		else if( (m_low & 0x4000) == 0x4000 && 
-			(m_high & 0x4000) == 0) // XXX: Can be written shorter
+		else if( (m_low & 0x4000) && !(m_high & 0x4000)) 
 		{
 			m_code ^= 0x4000;
-			m_low &= 0x3fff; // XXX: book had 0x3ffff
+			m_low &= 0x3fff;
 			m_high |= 0x4000;
 		}
 		else

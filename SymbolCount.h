@@ -15,7 +15,7 @@ class CSymbolCount
 public:
 	CSymbol* GetSymbol() {return m_symbol;}
 	void SetSymbol(CSymbol *new_symbol);
-	unsigned short int GetCount() {return m_count;}
+	unsigned short int GetCount();
 	void SetCount(unsigned short int new_count);
 	void AddToCount(unsigned short int inc);
 	CSymbolCount();

@@ -20,7 +20,7 @@ static char THIS_FILE[]=__FILE__;
 #ifdef DEBUG
 //#define DEBUG_PROBABILITY
 //#define DEBUG_INCODES
-#define DEBUG_MODEL_COUNT
+//#define DEBUG_MODEL_COUNT
 #endif
 
 //////////////////////////////////////////////////////////////////////
@@ -64,6 +64,8 @@ CAdaptiveModel::~CAdaptiveModel()
 
 #ifdef DEBUG_MODEL_COUNT
 	number_of_models--;
+	if(!(number_of_models%100))
+		cout << number_of_models << " ";
 #endif
 }
 
@@ -220,29 +222,29 @@ void CAdaptiveModel::UpdateWithWord(const WORD symbolcode)
 			int abovecount = (*it)->GetCount()-prevtotalcount;
 			if(belowcount <= abovecount)
 			{
+				// No more swapping since the order is correct
 				break;
 			}
 
+			// Wrong order, swap the two.
 			CSymbolCount &above = **it;
 			list<CSymbolCount*>::iterator tempit = it;
 			tempit++;
 			CSymbolCount &below = **tempit;
-			iter_swap(it,tempit);
-			it = tempit;
+			*it = &below;
+			*tempit = &above;
 			// Recalculate counts
 			above.SetCount(above.GetCount()-belowcount);
 			below.SetCount(below.GetCount()+abovecount);
 
 			prevtotalcount = below.GetCount();
 
-			it--;
-		
 		}
 
 		return;
 	}
 
-	// Wasn't in list at all
+	// The symbol wasn't in the list at all, so we add it.
 	CSymbol *newsymbol = new CSymbol();
 	newsymbol->SetCode(symbolcode);
 	CSymbolCount *sc = new CSymbolCount();
@@ -281,8 +283,6 @@ void CAdaptiveModel::MakeSymbolDataFromCode(unsigned short int count,
 	{
 		low_count = (*it)->GetCount();
 	}
-	it--; // XXX: Remove?
-
 
 	CSymbol *symbol = symboldata.GetSymbol();
 	if(symbol)
@@ -327,6 +327,17 @@ void CAdaptiveModel::ScaleModel()
 
 	m_totalcount = current_total;
 }
+
+int CAdaptiveModel::GetTotalEntries()
+{
+	return m_totalcount;
+}
+
+int CAdaptiveModel::GetDifferentEntries()
+{
+	return m_symbolcountlist.size();
+}
+
 
 #ifdef DEBUG
 void CAdaptiveModel::Dump()

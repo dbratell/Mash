@@ -31,6 +31,9 @@ public:
 				CSymbolData &symboldata /* OUT */);
 	void UpdateWithWord(const WORD symbolcode);
 	unsigned short int GetScale() const;
+	void ScaleModel();
+	int GetTotalEntries();
+	int GetDifferentEntries();
 #ifdef DEBUG
 	void Dump();
 #endif
@@ -38,7 +41,6 @@ public:
 private:
 	unsigned short int m_totalcount;
 	list<CSymbolCount*> m_symbolcountlist;
-	void ScaleModel();
 };
 
 #endif // !defined(ADAPTIVEMODEL_H)

@@ -17,6 +17,7 @@ class CContext
 {
 public:
 	void ResetContext();
+	void DampenHistory();
 	CContext(int order=1);
 	virtual ~CContext();
 	int GetOrder();
