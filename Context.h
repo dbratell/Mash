@@ -16,18 +16,22 @@
 class CContext  
 {
 public:
+	void ResetContext();
 	CContext(int order=1);
 	virtual ~CContext();
 	int GetOrder();
 	void AddHistory(int symbolcode);
 	CModel *GetModel(int rel_order=0);
+#ifdef DEBUG
+	void Dump();
+#endif
 
 private:
 
 	int m_order;
 	int m_current_order;
 	int *m_history;
-	CModelSet m_models;
+	CModelSet *m_models;
 
 	CStaticModel m_escapemodel;
 };

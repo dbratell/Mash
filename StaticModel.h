@@ -24,6 +24,10 @@ public:
 		CSymbolData &symboldata /* OUT */);
 	void UpdateWithWord(const WORD symbolcode);
 	unsigned short int GetScale() const;
+
+#ifdef DEBUG
+	void Dump();
+#endif
 };
 
 #endif // !defined(AFX_STATICMODEL_H__A7A32FB8_DF80_4C65_A80A_FBF63BA74ADF__INCLUDED_)

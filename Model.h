@@ -24,6 +24,11 @@ public:
 		CSymbolData &symboldata /* OUT */)=0;
 	virtual void UpdateWithWord(const WORD symbolcode)=0;
 	virtual unsigned short int GetScale() const=0;
+#ifdef DEBUG
+	virtual void Dump()=0;
+	CString name;
+#endif
+
 	
 };
 

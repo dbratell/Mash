@@ -20,7 +20,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 #ifdef DEBUG
-#define DEBUG_PROBABILITY
+//#define DEBUG_PROBABILITY
 //#define DEBUG_INCODES
 #endif
 
@@ -103,3 +103,12 @@ void CStaticModel::MakeSymbolDataFromCode(unsigned short int count,
 	symboldata.SetScale(END_OF_STREAM_SYMBOLCODE+1);
 	return;
 }
+
+#ifdef DEBUG
+void CStaticModel::Dump()
+{
+	cout << "--- " << name << " ---" << endl;
+	cout << "Static Model with all symbols from <0> to <255> plus ESCAPE and END_OF_STREAM" <<endl;
+	cout << endl << endl;
+}
+#endif

@@ -7,6 +7,11 @@
 
 #include "AdaptiveModel.h"
 
+#ifdef DEBUG
+#include <iostream>
+using namespace std;
+#endif
+
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
@@ -34,7 +39,11 @@ CContext::CContext(int order /* =1 */) : m_current_order(0)
 	}
 
 	m_history = new int[m_order];
+	m_models = new CModelSet();
 
+#ifdef DEBUG
+	m_escapemodel.name="<ESC>";
+#endif
 }
 
 CContext::~CContext()
@@ -76,17 +85,71 @@ void CContext::AddHistory(int symbolcode)
  */
 CModel *CContext::GetModel(int rel_order /* =0 */)
 {
+#ifdef DEBUG
+	CString name;
+#endif
+
 	ASSERT(rel_order <= 0);
 	if(m_current_order+rel_order<0)
 	{
 		return &m_escapemodel;
 	}
 
-	CModelSet *modelset = &m_models;
+	CModelSet *modelset = m_models;
 	for(int i=-rel_order; i<m_current_order; i++)
 	{
+#ifdef DEBUG
+		if(isprint(m_history[i]))
+		{
+			name += (char)m_history[i];
+		}
+		else
+		{
+			name += "?";
+		}
+#endif
 		modelset = modelset->GetSubModelSet(m_history[i]);
 	}
-	return modelset->GetModel();
+	CModel *model = modelset->GetModel();
+#ifdef DEBUG
+	model->name=name;
+#endif
+	return model;
 }
 
+
+#ifdef DEBUG
+void CContext::Dump()
+{
+	cout << "CONTEXT : '";
+	for(int i=0; i<m_current_order; i++)
+	{
+		if(isprint(m_history[i]))
+		{
+			cout << (char)m_history[i];
+		}
+		else
+		{
+			cout << "?";
+		}
+	}
+	cout << "'" << endl;
+
+	m_models->Dump();
+}
+#endif
+
+/**
+ * Called to empty the context and restart. This is used to keep memory usage down
+ * and maybe to remove an ineffective model.
+ */
+void CContext::ResetContext()
+{
+	m_current_order = 0;
+
+	delete m_models;
+	m_models = new CModelSet();
+
+	
+
+}

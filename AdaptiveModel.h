@@ -31,6 +31,9 @@ public:
 				CSymbolData &symboldata /* OUT */);
 	void UpdateWithWord(const WORD symbolcode);
 	unsigned short int GetScale() const;
+#ifdef DEBUG
+	void Dump();
+#endif
 	
 private:
 	unsigned short int m_totalcount;

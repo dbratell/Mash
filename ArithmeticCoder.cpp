@@ -23,6 +23,7 @@ static char THIS_FILE[]=__FILE__;
 //#define DEBUG_BITS
 //#define DEBUG_LOW_HIGH
 //#define DEBUG_IN_OUT
+//#define DEBUG_DUMP
 #endif
 
 //////////////////////////////////////////////////////////////////////
@@ -59,7 +60,7 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 
 	InitializeArithmeticEncoder();
 
-	int context = 0;
+//	int context = 0;
 
 	WORD symbolcode_to_send;
 
@@ -98,8 +99,8 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 				static_cast<WORD>(symbolcode_to_send),
 				symboldata);
 #ifdef DEBUG_CALCULATIONS
-			cout << "(sd:"<<symboldata->GetLowCount()<<"-"<<
-				symboldata->GetHighCount()<<")"<<endl;
+			cout << "(sd:"<<symboldata.GetLowCount()<<"-"<<
+				symboldata.GetHighCount()<<")"<<endl;
 #endif
 			EncodeSymbol(outfile, symboldata);
 			// Was it an escape symbol?
@@ -124,10 +125,14 @@ void CArithmeticCoder::EncodeFile(CFile &infile, CFile &outfile)
 		// Update all used models
 		for(int i=backoff; i<=0; i++)
 		{
-			CModel *realmodel = m_context->GetModel(i);
-			realmodel->UpdateWithWord(context);
+			CModel *model = m_context->GetModel(i);
+			model->UpdateWithWord(symbolcode_to_send);
 		}
 		m_context->AddHistory(symbolcode_to_send);
+#ifdef DEBUG_DUMP
+		cout << endl << endl << "DUMPING ENCODING CONTEXT" << endl;
+		m_context->Dump();
+#endif
 
 	}
 
@@ -169,8 +174,8 @@ void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 
 			model->MakeSymbolDataFromCode(count,scale,symboldata);
 #ifdef DEBUG_CALCULATIONS
-			cout << "(sd:"<<symboldata->GetLowCount()<<"-"<<
-				symboldata->GetHighCount()<<")"<<endl;
+			cout << "(sd:"<<symboldata.GetLowCount()<<"-"<<
+				symboldata.GetHighCount()<<")"<<endl;
 #endif
 			context = symboldata.GetSymbol()->GetCode();
 			if(END_OF_STREAM_SYMBOLCODE == context)
@@ -190,15 +195,20 @@ void CArithmeticCoder::DecodeFile(CFile &in, CFile &out)
 			else
 			{
 				escapesymbol = false;
-				// Update all used models
-				for(int i=backoff; i<=0; i++)
-				{
-					CModel *realmodel = m_context->GetModel(i);
-					realmodel->UpdateWithWord(context);
-				}
-				m_context->AddHistory(context);
 			}
 		} while(escapesymbol);
+
+		// Update all used models
+		for(int i=backoff; i<=0; i++)
+		{
+			CModel *realmodel = m_context->GetModel(i);
+			realmodel->UpdateWithWord(context);
+		}
+		m_context->AddHistory(context);
+#ifdef DEBUG_DUMP
+		cout << endl << endl << "DUMPING DECODING CONTEXT" << endl;
+		m_context->Dump();
+#endif
 
 		ASSERT(context>=0 && context<256);
 		char buffer[1];

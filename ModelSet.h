@@ -9,13 +9,18 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#pragma warning(disable:4786)
+
 #include "Model.h"
-#include <vector>
+//#include <vector>
+#include <map>
 
 using namespace std;
 class CModelSet;
 
-typedef vector<CModelSet *> CModelSetVector;
+//typedef vector<CModelSet *> CModelSetVector;
+typedef CModelSet * ModelSetPointer;
+typedef map<unsigned short, ModelSetPointer> CModelSetMap;
 
 class CModelSet  
 {
@@ -25,11 +30,15 @@ public:
 
 	CModel *GetModel();
 	CModelSet *GetSubModelSet(int i);
+#ifdef DEBUG
+	void Dump();
+#endif
 
 private:
 	CModel *m_model;
 	
-	CModelSetVector m_modelsetvector;
+//	CModelSetVector m_modelsetvector;
+	CModelSetMap m_modelsetmap;
 };
 
 #endif // !defined(AFX_MODELSET_H__C5F26D4F_643E_4946_A1AD_04A5C67C1822__INCLUDED_)

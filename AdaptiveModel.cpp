@@ -306,20 +306,52 @@ void CAdaptiveModel::MakeSymbolDataFromCode(unsigned short int count,
  */
 void CAdaptiveModel::ScaleModel()
 {
-	int new_total=0;
+	list<CSymbolCount*>::iterator it = m_symbolcountlist.end();
+
+	if(m_symbolcountlist.empty())
+	{
+		return;
+	}
+
+	int current_total = 0;
+	do {
+		it--;
+		int new_count;
+		CSymbolCount *sc = *it;
+		new_count = sc->GetCount() - current_total;
+		if(new_count>1)
+			new_count /= 2;
+		current_total += new_count;
+		sc->SetCount(current_total);
+	} while(it != m_symbolcountlist.begin());
+
+	m_totalcount = current_total;
+}
+
+#ifdef DEBUG
+void CAdaptiveModel::Dump()
+{
+	cout << "--- \"" << (LPCSTR)name << "\" ---" << endl;
 	list<CSymbolCount*>::iterator it = m_symbolcountlist.begin();
 
 	while(it != m_symbolcountlist.end())
 	{
-		int new_count;
 		CSymbolCount *sc = *it;
-		new_count = sc->GetCount();
-		if(new_count>1)
-			new_count /= 2;
-		sc->SetCount(new_count);
-		new_total += new_count;
+		int symbolcode = sc->GetSymbol()->GetCode();
+		if((symbolcode >=0) && (symbolcode <= 255))
+		{
+			if(isalnum(symbolcode)) 
+			{
+				cout << "'" << (char)symbolcode << "' ";
+			}
+			else
+			{
+				cout << "<" << symbolcode << "> ";
+			}
+			cout << "\t " << sc->GetCount() << endl;
+		}
 		it++;
 	}
-
-	m_totalcount = new_total;
+	cout << endl << endl;
 }
+#endif
